@@ -1,0 +1,455 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SQL Assistant</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E🗄️%3C/text%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#EDF0F3; --panel:#FFFFFF; --panel2:#F6F8FA; --ink:#16212C; --muted:#5A6775; --line:#D6DCE3;
+  --accent:#0B6E6E; --accent-ink:#FFFFFF; --accent-soft:#DDF1EF; --warn:#9A5B00; --warn-soft:#FFF1D6;
+  --err:#B3261E; --err-soft:#FBE4E2; --user:#16212C; --user-ink:#F4F7F9;
+  --k:#0B6E6E; --s:#9A4A12; --n:#5B3FC4; --c:#7B8794; --f:#1B5FB8;
+  --sans:'IBM Plex Sans',system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;
+  --mono:'IBM Plex Mono',ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+  color-scheme:light;
+}
+:root[data-theme="dark"]{
+  --bg:#0E151B; --panel:#151E26; --panel2:#1A2530; --ink:#E4EAF0; --muted:#93A1AF; --line:#263341;
+  --accent:#4FD1C5; --accent-ink:#06211F; --accent-soft:#12312F; --warn:#F0B35A; --warn-soft:#33270F;
+  --err:#FF8A80; --err-soft:#3A1816; --user:#2A3A49; --user-ink:#F1F5F8;
+  --k:#4FD1C5; --s:#F0A56B; --n:#B79CFF; --c:#7F8C99; --f:#7DB4FF; color-scheme:dark;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#0E151B; --panel:#151E26; --panel2:#1A2530; --ink:#E4EAF0; --muted:#93A1AF; --line:#263341;
+    --accent:#4FD1C5; --accent-ink:#06211F; --accent-soft:#12312F; --warn:#F0B35A; --warn-soft:#33270F;
+    --err:#FF8A80; --err-soft:#3A1816; --user:#2A3A49; --user-ink:#F1F5F8;
+    --k:#4FD1C5; --s:#F0A56B; --n:#B79CFF; --c:#7F8C99; --f:#7DB4FF; color-scheme:dark;
+  }
+}
+*{box-sizing:border-box}
+html,body{height:100%;margin:0}
+body{font:15px/1.5 var(--sans);background:var(--bg);color:var(--ink);display:flex;flex-direction:column;overflow:hidden}
+button,select,textarea{font:inherit;color:inherit}
+button{cursor:pointer}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+
+header{display:flex;align-items:center;gap:12px;padding:10px 16px;background:var(--panel);border-bottom:1px solid var(--line);flex:none}
+header h1{font-size:16px;font-weight:600;margin:0;letter-spacing:.1px}
+header .sub{color:var(--muted);font-size:13px}
+.spacer{flex:1}
+.btn{border:1px solid var(--line);background:var(--panel);border-radius:6px;padding:6px 10px;font-size:13px;line-height:1.2}
+.btn:hover{background:var(--panel2)}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:var(--accent-ink);font-weight:500}
+.btn.primary:hover{filter:brightness(1.07)}
+.btn:disabled{opacity:.5;cursor:not-allowed}
+.ctl{display:flex;align-items:center;gap:6px;font-size:13px;color:var(--muted)}
+.ctl select{border:1px solid var(--line);background:var(--panel);border-radius:6px;padding:5px 8px;font-size:13px}
+.menu-btn{display:none}
+
+main{flex:1;min-height:0;display:grid;grid-template-columns:240px minmax(340px,1fr) minmax(380px,1.15fr)}
+aside{background:var(--panel2);border-right:1px solid var(--line);display:flex;flex-direction:column;min-height:0}
+aside .top{padding:12px}
+aside .top .btn{width:100%}
+#convList{flex:1;overflow:auto;padding:0 8px 12px;margin:0;list-style:none}
+#convList li{display:flex;align-items:center;gap:4px;border-radius:6px}
+#convList li button.title{flex:1;text-align:left;background:none;border:0;padding:8px 10px;border-radius:6px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:14px}
+#convList li:hover{background:var(--line)}
+#convList li.active{background:var(--accent-soft)}
+#convList li.active button.title{font-weight:500}
+#convList .del{background:none;border:0;color:var(--muted);padding:4px 8px;border-radius:6px;visibility:hidden}
+#convList li:hover .del,#convList li.active .del{visibility:visible}
+.empty-hist{color:var(--muted);font-size:13px;padding:8px 10px}
+
+.chat{display:flex;flex-direction:column;min-height:0;background:var(--bg)}
+#log{flex:1;overflow:auto;padding:20px 20px 8px;scroll-behavior:smooth}
+.welcome{max-width:520px;margin:6vh auto 0}
+.welcome h2{font-size:22px;margin:0 0 6px;font-weight:600}
+.welcome p{color:var(--muted);margin:0 0 16px}
+.chips{display:flex;flex-direction:column;gap:8px;align-items:flex-start}
+.chip{border:1px solid var(--line);background:var(--panel);border-radius:8px;padding:8px 12px;text-align:left;font-size:14px}
+.chip:hover{border-color:var(--accent)}
+.msg{max-width:92%;margin:0 0 14px;padding:10px 13px;border-radius:10px;white-space:pre-wrap;word-wrap:break-word}
+.msg.user{margin-left:auto;background:var(--user);color:var(--user-ink);border-bottom-right-radius:3px}
+.msg.bot{background:var(--panel);border:1px solid var(--line);border-bottom-left-radius:3px;cursor:default}
+.msg.bot.clickable{cursor:pointer}
+.msg.bot.clickable:hover{border-color:var(--accent)}
+.msg.bot.selected{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent)}
+.msg.refused{background:var(--warn-soft);border-color:transparent;color:var(--ink)}
+.msg.error{background:var(--err-soft);border-color:transparent}
+.msg .meta{display:block;margin-top:8px;font-size:12px;color:var(--muted);white-space:normal}
+.msg pre.mini{margin:8px 0 0;padding:8px 10px;background:var(--panel2);border:1px solid var(--line);border-radius:6px;font:12.5px/1.5 var(--mono);white-space:pre-wrap;overflow:auto;max-height:140px}
+
+.progress{display:flex;align-items:center;gap:10px;margin:0 0 14px;color:var(--muted);font-size:13px}
+.spin{width:16px;height:16px;border-radius:50%;border:2px solid var(--line);border-top-color:var(--accent);animation:sp .8s linear infinite;flex:none}
+@keyframes sp{to{transform:rotate(360deg)}}
+@media (prefers-reduced-motion:reduce){.spin{animation-duration:2.4s}#log{scroll-behavior:auto}}
+
+form.composer{display:flex;gap:8px;padding:12px 16px 16px;border-top:1px solid var(--line);background:var(--bg)}
+form.composer textarea{flex:1;resize:none;border:1px solid var(--line);background:var(--panel);border-radius:8px;padding:10px 12px;max-height:140px;min-height:44px}
+form.composer .btn{padding:0 16px}
+
+.bench{background:var(--panel);border-left:1px solid var(--line);display:flex;flex-direction:column;min-height:0;min-width:0}
+.tabs{display:flex;gap:2px;padding:8px 12px 0;border-bottom:1px solid var(--line);flex:none;align-items:flex-end}
+.tab{background:none;border:0;border-bottom:2px solid transparent;padding:8px 12px;color:var(--muted);font-size:14px}
+.tab[aria-selected="true"]{color:var(--ink);border-bottom-color:var(--accent);font-weight:500}
+.tab .count{color:var(--muted);font-size:12px;margin-left:4px}
+.pane{flex:1;overflow:auto;padding:16px;min-height:0}
+.pane[hidden]{display:none}
+.toolbar{display:flex;gap:8px;margin-bottom:10px;align-items:center}
+.toolbar .note{color:var(--muted);font-size:13px;margin-left:auto}
+pre.sql{margin:0;padding:14px 16px;background:var(--panel2);border:1px solid var(--line);border-radius:8px;font:13.5px/1.65 var(--mono);white-space:pre-wrap;word-break:break-word;tab-size:2}
+.t-k{color:var(--k);font-weight:500}.t-s{color:var(--s)}.t-n{color:var(--n)}.t-c{color:var(--c);font-style:italic}.t-f{color:var(--f)}
+.placeholder{color:var(--muted);padding:24px 4px}
+.section{margin-bottom:18px}
+.section h3{margin:0 0 6px;font-size:14px;font-weight:600}
+.section p{margin:0;max-width:70ch}
+ul.plain{margin:0;padding-left:18px}
+ul.plain li{margin:3px 0;max-width:70ch}
+.callout{border-radius:8px;padding:10px 12px;font-size:14px;margin-bottom:12px}
+.callout.warn{background:var(--warn-soft)}
+.callout.issue{background:var(--accent-soft)}
+.tablewrap{overflow:auto;border:1px solid var(--line);border-radius:8px;max-height:100%}
+table{border-collapse:collapse;width:100%;font-size:13px}
+th,td{padding:7px 10px;border-bottom:1px solid var(--line);text-align:left;white-space:nowrap}
+th{position:sticky;top:0;background:var(--panel2);font-weight:600}
+td.null{color:var(--muted);font-style:italic}
+tr:last-child td{border-bottom:0}
+.steps{display:flex;flex-wrap:wrap;gap:6px;padding:10px 16px;border-top:1px solid var(--line);font-size:12px;color:var(--muted);flex:none;min-height:42px;align-items:center}
+.step{padding:2px 8px;border-radius:99px;border:1px solid var(--line)}
+.step.done{background:var(--accent-soft);border-color:transparent;color:var(--ink)}
+.step.skipped{opacity:.4}
+
+#toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:10px 16px;border-radius:8px;font-size:14px;max-width:90vw;z-index:50}
+#toast[hidden]{display:none}
+#toast.err{background:var(--err);color:#fff}
+dialog{border:1px solid var(--line);border-radius:10px;background:var(--panel);color:var(--ink);max-width:640px;width:92vw;padding:0}
+dialog::backdrop{background:rgba(0,0,0,.45)}
+dialog .head{display:flex;align-items:center;padding:12px 16px;border-bottom:1px solid var(--line)}
+dialog .head h2{margin:0;font-size:16px;flex:1}
+dialog .body{padding:14px 16px;max-height:70vh;overflow:auto}
+.tbl{margin-bottom:14px}
+.tbl b{font-family:var(--mono);font-weight:500}
+.tbl ul{margin:4px 0 0;padding-left:0;list-style:none;font:13px/1.6 var(--mono);color:var(--muted)}
+.tbl li .pk{color:var(--accent)}
+.fk{color:var(--f)}
+
+.mobile-switch{display:none}
+@media (max-width:960px){
+  main{grid-template-columns:1fr;position:relative}
+  aside{position:absolute;z-index:20;top:0;bottom:0;left:0;width:260px;transform:translateX(-100%);transition:transform .2s}
+  aside.open{transform:none;box-shadow:4px 0 20px rgba(0,0,0,.25)}
+  .menu-btn{display:inline-block}
+  .bench{border-left:0}
+  main[data-view="chat"] .bench{display:none}
+  main[data-view="bench"] .chat{display:none}
+  .mobile-switch{display:flex;gap:6px;padding:8px 12px;background:var(--panel);border-bottom:1px solid var(--line)}
+  .mobile-switch button{flex:1}
+  .mobile-switch button[aria-pressed="true"]{background:var(--accent-soft);border-color:var(--accent)}
+  header .sub{display:none}
+}
+@media (max-width:560px){
+  header{flex-wrap:wrap;gap:8px}
+}
+</style>
+</head>
+<body>
+<header>
+  <button class="btn menu-btn" id="menuBtn" aria-label="Open conversations">Chats</button>
+  <h1>SQL assistant</h1><span class="sub">Ask in plain English, get checked SQL</span>
+  <span class="spacer"></span>
+  <label class="ctl">Dialect
+    <select id="dialect"><option value="sqlite">SQLite</option><option value="postgres">PostgreSQL</option><option value="mysql">MySQL</option></select>
+  </label>
+  <label class="ctl exec"><input type="checkbox" id="execToggle" checked> <span>Run queries</span></label>
+  <button class="btn" id="schemaBtn">Schema</button>
+  <button class="btn" id="themeBtn" aria-label="Toggle dark mode">Dark mode</button>
+</header>
+<div class="mobile-switch">
+  <button class="btn" id="vChat" aria-pressed="true">Chat</button>
+  <button class="btn" id="vBench" aria-pressed="false">SQL and results</button>
+</div>
+<main id="layout" data-view="chat">
+  <aside id="side">
+    <div class="top"><button class="btn primary" id="newChat">New chat</button></div>
+    <ul id="convList"></ul>
+  </aside>
+
+  <section class="chat">
+    <div id="log" aria-live="polite"></div>
+    <form class="composer" id="form">
+      <textarea id="input" rows="1" maxlength="2000" placeholder="Ask about the data or paste a query…" aria-label="Your message"></textarea>
+      <button class="btn primary" id="send" type="submit">Send</button>
+    </form>
+  </section>
+
+  <section class="bench">
+    <div class="tabs" role="tablist">
+      <button class="tab" role="tab" id="t-sql" aria-selected="true" data-tab="sql">SQL</button>
+      <button class="tab" role="tab" id="t-exp" aria-selected="false" data-tab="exp">Explanation</button>
+      <button class="tab" role="tab" id="t-res" aria-selected="false" data-tab="res">Results<span class="count" id="resCount"></span></button>
+      <button class="tab" role="tab" id="t-plan" aria-selected="false" data-tab="plan">Query plan</button>
+    </div>
+    <div class="pane" id="p-sql" role="tabpanel"></div>
+    <div class="pane" id="p-exp" role="tabpanel" hidden></div>
+    <div class="pane" id="p-res" role="tabpanel" hidden></div>
+    <div class="pane" id="p-plan" role="tabpanel" hidden></div>
+    <div class="steps" id="steps" aria-label="Agent steps"></div>
+  </section>
+</main>
+
+<div id="toast" hidden role="status"></div>
+<dialog id="schemaDlg"><div class="head"><h2>Database schema</h2><button class="btn" id="closeSchema">Close</button></div><div class="body" id="schemaBody"></div></dialog>
+
+<script>
+const $ = (s, r = document) => r.querySelector(s);
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const STORE = 'sqlassistant.convs.v1';
+const EXAMPLES = [
+  'Show all employees hired after January 2024.',
+  'Show all customers.',
+  'Top 5 customers by total spend, with their state.',
+  'How many orders are in each status?'
+];
+const STEP_LABEL = {
+  intent_detection:'Understand request', schema_retrieval:'Read schema', sql_generation:'Write SQL', analyze_user_sql:'Review SQL',
+  sql_validation:'Validate', sql_repair:'Repair', sql_optimization:'Optimise', execute_query:'Run', generate_explanation:'Explain'
+};
+
+/* ---------- state ---------- */
+let convs = [];
+let current = null;
+let busy = false;
+try { convs = JSON.parse(localStorage.getItem(STORE) || '[]'); } catch { convs = []; }
+const newId = () => 'c' + Math.random().toString(36).slice(2, 10) + Date.now().toString(36);
+const save = () => { try { localStorage.setItem(STORE, JSON.stringify(convs.slice(0, 40))); } catch {} };
+function newConv() { const c = { id: newId(), title: 'New chat', turns: [] }; convs.unshift(c); current = c; save(); renderAll(); }
+
+/* ---------- theme ---------- */
+function applyTheme(t) {
+  if (t) document.documentElement.setAttribute('data-theme', t); else document.documentElement.removeAttribute('data-theme');
+  const dark = (t || (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light')) === 'dark';
+  $('#themeBtn').textContent = dark ? 'Light mode' : 'Dark mode';
+}
+let theme = null; try { theme = localStorage.getItem('sqlassistant.theme'); } catch {}
+applyTheme(theme);
+$('#themeBtn').onclick = () => {
+  const dark = document.documentElement.getAttribute('data-theme') === 'dark' ||
+    (!document.documentElement.getAttribute('data-theme') && matchMedia('(prefers-color-scheme: dark)').matches);
+  theme = dark ? 'light' : 'dark'; applyTheme(theme);
+  try { localStorage.setItem('sqlassistant.theme', theme); } catch {}
+};
+
+/* ---------- SQL highlighting ---------- */
+const KW = new Set(('select from where group by order having limit offset join left right inner outer full cross on as and or not in is null like between exists ' +
+  'union all distinct case when then else end asc desc with over partition using count sum avg min max cast coalesce ifnull').split(' '));
+function highlight(sql) {
+  const re = /(--[^\n]*|\/\*[\s\S]*?\*\/)|('(?:[^']|'')*')|("(?:[^"]|"")*"|`[^`]*`)|(\b\d+(?:\.\d+)?\b)|([A-Za-z_][A-Za-z_0-9]*)(\s*\()?|([\s\S])/g;
+  let out = '', m;
+  while ((m = re.exec(sql))) {
+    if (m[1]) out += `<span class="t-c">${esc(m[1])}</span>`;
+    else if (m[2]) out += `<span class="t-s">${esc(m[2])}</span>`;
+    else if (m[3]) out += esc(m[3]);
+    else if (m[4]) out += `<span class="t-n">${esc(m[4])}</span>`;
+    else if (m[5]) {
+      const w = m[5];
+      if (KW.has(w.toLowerCase()) && !(m[6] && !['count','sum','avg','min','max','coalesce','ifnull','cast','in','exists','over'].includes(w.toLowerCase())))
+        out += `<span class="t-k">${esc(w)}</span>${esc(m[6] || '')}`;
+      else if (m[6]) out += `<span class="t-f">${esc(w)}</span>${esc(m[6])}`;
+      else out += esc(w);
+    } else out += esc(m[0]);
+  }
+  return out;
+}
+
+/* ---------- toast ---------- */
+let toastTimer;
+function toast(msg, isErr) {
+  const t = $('#toast'); t.textContent = msg; t.className = isErr ? 'err' : ''; t.hidden = false;
+  clearTimeout(toastTimer); toastTimer = setTimeout(() => t.hidden = true, isErr ? 6000 : 2200);
+}
+
+/* ---------- rendering ---------- */
+function renderConvList() {
+  const ul = $('#convList'); ul.innerHTML = '';
+  if (!convs.length) { ul.innerHTML = '<li class="empty-hist">No conversations yet.</li>'; return; }
+  convs.forEach(c => {
+    const li = document.createElement('li'); if (c === current) li.className = 'active';
+    li.innerHTML = `<button class="title" title="${esc(c.title)}">${esc(c.title)}</button><button class="del" aria-label="Delete conversation">✕</button>`;
+    li.querySelector('.title').onclick = () => { if (busy) return; current = c; renderAll(); $('#side').classList.remove('open'); };
+    li.querySelector('.del').onclick = () => {
+      if (busy) return; convs = convs.filter(x => x !== c);
+      if (current === c) current = convs[0] || null; if (!current) return newConv();
+      save(); renderAll();
+    };
+    ul.appendChild(li);
+  });
+}
+
+function renderLog() {
+  const log = $('#log'); log.innerHTML = '';
+  if (!current.turns.length) {
+    log.innerHTML = `<div class="welcome"><h2>What would you like to know?</h2>
+      <p>I turn questions about the company database into SQL, check it against the real schema, and explain it. I can also fix or speed up a query you paste. I only help with SQL.</p>
+      <div class="chips">${EXAMPLES.map(e => `<button class="chip" type="button">${esc(e)}</button>`).join('')}</div></div>`;
+    log.querySelectorAll('.chip').forEach(b => b.onclick = () => send(b.textContent));
+    return;
+  }
+  current.turns.forEach((t, i) => {
+    const d = document.createElement('div');
+    if (t.role === 'user') { d.className = 'msg user'; d.textContent = t.text; }
+    else {
+      const r = t.resp || {};
+      d.className = 'msg bot' + (r.status === 'refused' ? ' refused' : '') + (t.error ? ' error' : '') + (r.sql ? ' clickable' : '');
+      d.dataset.idx = i;
+      let html = esc(t.text);
+      if (r.sql) html += `<pre class="mini">${highlight(r.sql)}</pre><span class="meta">${r.results ? r.results.row_count + ' rows' + (r.results.truncated ? ' (first 100)' : '') + ' · ' : ''}Click to open in the panel</span>`;
+      d.innerHTML = html;
+      if (r.sql) d.onclick = () => { showResponse(r); document.querySelectorAll('.msg.bot.selected').forEach(x => x.classList.remove('selected')); d.classList.add('selected'); $('#layout').dataset.view = 'bench'; setView(); };
+    }
+    log.appendChild(d);
+  });
+  log.scrollTop = log.scrollHeight;
+}
+
+function renderAll() { renderConvList(); renderLog(); const last = [...current.turns].reverse().find(t => t.resp && t.resp.sql); showResponse(last ? last.resp : null); }
+
+function selectTab(name) {
+  document.querySelectorAll('.tab').forEach(t => t.setAttribute('aria-selected', String(t.dataset.tab === name)));
+  ['sql', 'exp', 'res', 'plan'].forEach(n => $('#p-' + n).hidden = n !== name);
+}
+document.querySelectorAll('.tab').forEach(t => t.onclick = () => selectTab(t.dataset.tab));
+
+function downloadFile(name, text, type) {
+  const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([text], { type }));
+  a.download = name; document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+}
+function toCSV(res) {
+  const q = v => { if (v === null || v === undefined) return ''; const s = String(v); return /[",\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s; };
+  return [res.columns.map(q).join(','), ...res.rows.map(r => r.map(q).join(','))].join('\n');
+}
+
+function showResponse(r) {
+  const ph = t => `<div class="placeholder">${t}</div>`;
+  $('#resCount').textContent = '';
+  if (!r || !r.sql) {
+    $('#p-sql').innerHTML = ph('The query will appear here once you ask a question.');
+    $('#p-exp').innerHTML = ph('A plain-English explanation will appear here.');
+    $('#p-res').innerHTML = ph('Query results will appear here.');
+    $('#p-plan').innerHTML = ph('SQLite’s query plan will appear here.');
+    return;
+  }
+  const dl = { sqlite: 'SQLite', postgres: 'PostgreSQL', mysql: 'MySQL' }[r.dialect] || r.dialect;
+  $('#p-sql').innerHTML = `<div class="toolbar"><button class="btn" id="copyBtn">Copy SQL</button><button class="btn" id="dlSql">Download .sql</button><span class="note">${esc(dl)} syntax · checked against the schema</span></div>
+    <pre class="sql">${highlight(r.sql)}</pre>`;
+  $('#copyBtn').onclick = async () => { try { await navigator.clipboard.writeText(r.sql); toast('SQL copied'); } catch { toast('Could not copy. Select the text and copy it manually.', true); } };
+  $('#dlSql').onclick = () => downloadFile('query.sql', r.sql + ';\n', 'text/plain');
+
+  let e = '';
+  if (r.issue) e += `<div class="callout issue">${esc(r.issue)}</div>`;
+  if (r.explanation) e += `<div class="section"><h3>What this query does</h3><p>${esc(r.explanation)}</p></div>`;
+  if (r.suggestions && r.suggestions.length) e += `<div class="section"><h3>Suggestions</h3><ul class="plain">${r.suggestions.map(s => `<li>${esc(s)}</li>`).join('')}</ul></div>`;
+  if (r.warnings && r.warnings.length) e += `<div class="callout warn"><ul class="plain">${r.warnings.map(s => `<li>${esc(s)}</li>`).join('')}</ul></div>`;
+  $('#p-exp').innerHTML = e || ph('No explanation for this reply.');
+
+  const res = r.results;
+  if (res) {
+    $('#resCount').textContent = ' ' + res.row_count + (res.truncated ? '+' : '');
+    const head = res.columns.map(c => `<th>${esc(c)}</th>`).join('');
+    const rows = res.rows.map(row => '<tr>' + row.map(v => v === null ? '<td class="null">NULL</td>' : `<td>${esc(v)}</td>`).join('') + '</tr>').join('');
+    $('#p-res').innerHTML = `<div class="toolbar"><button class="btn" id="dlCsv">Download CSV</button><span class="note">${res.row_count} row${res.row_count === 1 ? '' : 's'}${res.truncated ? ' shown (limited to the first 100)' : ''}</span></div>
+      ${res.rows.length ? `<div class="tablewrap"><table><thead><tr>${head}</tr></thead><tbody>${rows}</tbody></table></div>` : ph('The query ran and returned no rows.')}`;
+    $('#dlCsv').onclick = () => downloadFile('results.csv', toCSV(res), 'text/csv');
+  } else $('#p-res').innerHTML = ph('Results were not run for this reply. Turn on “Run queries” to see them.');
+
+  $('#p-plan').innerHTML = r.plan && r.plan.length
+    ? `<div class="section"><h3>How SQLite will run it</h3><ul class="plain">${r.plan.map(p => `<li><code>${esc(p)}</code></li>`).join('')}</ul></div><p class="placeholder" style="padding:0">“SCAN” means every row of the table is read. “SEARCH … USING INDEX” means an index narrows the rows first.</p>`
+    : ph('No plan available.');
+}
+
+/* ---------- sending ---------- */
+function setBusy(b) { busy = b; $('#send').disabled = b; $('#input').disabled = b; if (!b) $('#input').focus(); }
+function showSteps(done) {
+  const order = ['intent_detection', 'schema_retrieval', 'sql_generation', 'sql_validation', 'sql_optimization', 'execute_query', 'generate_explanation'];
+  const seen = new Set(done);
+  $('#steps').innerHTML = order.map(n => `<span class="step ${seen.has(n) ? 'done' : ''}">${STEP_LABEL[n]}</span>`).join('');
+}
+
+async function send(text) {
+  text = (text || '').trim(); if (!text || busy) return;
+  if (!current) newConv();
+  current.turns.push({ role: 'user', text });
+  if (current.title === 'New chat') current.title = text.slice(0, 48);
+  save(); renderConvList(); renderLog();
+  const log = $('#log');
+  const prog = document.createElement('div'); prog.className = 'progress';
+  prog.innerHTML = '<span class="spin"></span><span id="progText">Thinking…</span>'; log.appendChild(prog); log.scrollTop = log.scrollHeight;
+  setBusy(true); showSteps([]); $('#input').value = ''; autosize();
+  const done = [];
+  try {
+    const res = await fetch('/api/chat/stream', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ session_id: current.id, message: text, dialect: $('#dialect').value, execute: $('#execToggle').checked })
+    });
+    if (!res.ok) {
+      let msg = 'The request failed.';
+      try { const j = await res.json(); msg = typeof j.detail === 'string' ? j.detail : 'Please check your message and try again.'; } catch {}
+      throw new Error(msg);
+    }
+    const reader = res.body.getReader(), dec = new TextDecoder(); let buf = '', final = null;
+    while (true) {
+      const { value, done: fin } = await reader.read(); if (fin) break;
+      buf += dec.decode(value, { stream: true });
+      let idx;
+      while ((idx = buf.indexOf('\n\n')) >= 0) {
+        const line = buf.slice(0, idx).trim(); buf = buf.slice(idx + 2);
+        if (!line.startsWith('data:')) continue;
+        const ev = JSON.parse(line.slice(5));
+        if (ev.type === 'step') { done.push(ev.node); showSteps(done); const p = $('#progText'); if (p && STEP_LABEL[ev.node]) p.textContent = STEP_LABEL[ev.node] + '…'; }
+        else if (ev.type === 'final') final = ev.response;
+        else if (ev.type === 'error') throw new Error(ev.message);
+      }
+    }
+    if (!final) throw new Error('No response was received. Please try again.');
+    current.turns.push({ role: 'bot', text: final.message, resp: final });
+    save(); prog.remove(); renderLog(); renderConvList();
+    if (final.sql) { showResponse(final); const bots = document.querySelectorAll('.msg.bot'); bots[bots.length - 1]?.classList.add('selected'); selectTab('sql'); }
+  } catch (err) {
+    prog.remove();
+    current.turns.push({ role: 'bot', text: err.message || 'Something went wrong.', error: true, resp: {} });
+    save(); renderLog(); toast(err.message || 'Something went wrong.', true);
+  } finally { setBusy(false); }
+}
+
+/* ---------- wiring ---------- */
+function autosize() { const t = $('#input'); t.style.height = 'auto'; t.style.height = Math.min(t.scrollHeight, 140) + 'px'; }
+$('#input').addEventListener('input', autosize);
+$('#input').addEventListener('keydown', e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); $('#form').requestSubmit(); } });
+$('#form').addEventListener('submit', e => { e.preventDefault(); send($('#input').value); });
+$('#newChat').onclick = () => { if (busy) return; newConv(); $('#side').classList.remove('open'); };
+$('#menuBtn').onclick = () => $('#side').classList.toggle('open');
+function setView() { const v = $('#layout').dataset.view; $('#vChat').setAttribute('aria-pressed', v === 'chat'); $('#vBench').setAttribute('aria-pressed', v === 'bench'); }
+$('#vChat').onclick = () => { $('#layout').dataset.view = 'chat'; setView(); };
+$('#vBench').onclick = () => { $('#layout').dataset.view = 'bench'; setView(); };
+
+$('#schemaBtn').onclick = async () => {
+  const dlg = $('#schemaDlg'), body = $('#schemaBody'); body.textContent = 'Loading…'; dlg.showModal();
+  try {
+    const s = await (await fetch('/api/schema')).json();
+    body.innerHTML = Object.entries(s.tables).map(([t, d]) => `<div class="tbl"><b>${esc(t)}</b><ul>` +
+      d.columns.map(c => `<li>${esc(c.name)} <span>${esc(c.type)}</span>${c.pk ? ' <span class="pk">primary key</span>' : ''}</li>`).join('') +
+      d.fks.map(f => `<li class="fk">${esc(f.from)} → ${esc(f.to_table)}.${esc(f.to)}</li>`).join('') + '</ul></div>').join('');
+  } catch { body.textContent = 'Could not load the schema.'; }
+};
+$('#closeSchema').onclick = () => $('#schemaDlg').close();
+
+if (!convs.length) newConv(); else { current = convs[0]; renderAll(); }
+fetch('/api/health').then(r => r.json()).then(h => { if (!h.llm_configured) toast('The server has no LLM_API_KEY set yet, so questions will fail.', true); }).catch(() => {});
+</script>
+</body>
+</html>

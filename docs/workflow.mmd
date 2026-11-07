@@ -1,0 +1,26 @@
+flowchart TD
+    A([User request]) --> B[Intent detection<br/>rules + LLM]
+    B --> C{Scope validation}
+    C -->|out of scope| R1[Reject: SQL only]
+    C -->|destructive / injection| R2[Reject: read-only]
+    C -->|vague request| Q[Ask clarification]
+    C -->|schema / concept / help| I[Answer info]
+    C -->|generate| D[Schema retrieval]
+    C -->|optimize / debug| D
+    D -->|generate| E[SQL generation<br/>modifies previous SQL on follow-ups]
+    D -->|optimize / debug| F[Analyse user SQL]
+    E --> G[SQL validation<br/>sqlglot + schema + SQLite engine]
+    F --> G
+    G -->|invalid, retries left| H[SQL repair]
+    H --> G
+    G -->|invalid, no retries left| X[Validation failed: graceful message]
+    G -->|valid, generate| J[SQL optimization<br/>re-validated]
+    G -->|valid, optimize / debug| K
+    J --> K[Execute query<br/>read-only, row cap, timeout]
+    K --> L[Generate explanation]
+    R1 --> Z
+    R2 --> Z
+    Q --> Z
+    I --> Z
+    X --> Z
+    L --> Z[Return response]

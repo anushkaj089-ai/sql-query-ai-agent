@@ -1,10 +1,10 @@
-# SQL Query AI Agent
+<img width="1916" height="861" alt="image" src="https://github.com/user-attachments/assets/54d9556c-aa15-4ed5-b803-bb45f306e91f" /># SQL Query AI Agent
 
 A task-focused AI agent that turns plain-English questions into **validated, read-only SQL**, explains the result,
 and can also **optimise** or **debug** SQL you paste in. It refuses everything that is not about SQL or the
 provided database. Built with **LangGraph + FastAPI + SQLite + sqlglot**.
 
-- **Live app:** `<ADD YOUR DEPLOYED LINK HERE>`
+- **Live app:** https://sql-query-ai-agent-agae.onrender.com/
 - **Demo video:** `<ADD YOUR VIDEO LINK HERE>`
 
 ## What it does
@@ -27,13 +27,7 @@ Docker, unit and integration tests.
 
 ## Quick start (local)
 
-```bash
-git clone <your-repo-url> && cd sql-agent
-python -m venv .venv && source .venv/bin/activate        # Windows: .venv\Scripts\activate
-pip install -r requirements.txt
-cp .env.example .env                                      # then put your free API key in .env
-uvicorn app.main:app --reload --port 8000
-# open http://localhost:8000
+```bas
 ```
 
 ### Get a free LLM key (any OpenAI-compatible provider works)
@@ -57,12 +51,12 @@ docker build -t sql-agent . && docker run -p 7860:7860 --env-file .env sql-agent
 
 ## Deployment
 
-**Hugging Face Spaces (Docker):** create a new Space → SDK **Docker** → upload this repo. Add `LLM_API_KEY` and
+**Render Free Spaces (Docker):** create a new Space → SDK **Docker** → upload this repo. Add `LLM_API_KEY` and
 `LLM_PROVIDER` under *Settings → Variables and secrets*. The Dockerfile already listens on port 7860.
 Add this header at the very top of the Space's README.md:
 ```
 ---
-title: SQL Assistant
+title: SQL Query AI agent
 sdk: docker
 app_port: 7860
 ---

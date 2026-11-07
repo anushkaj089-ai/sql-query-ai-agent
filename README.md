@@ -1,4 +1,4 @@
-<img width="1916" height="861" alt="image" src="https://github.com/user-attachments/assets/54d9556c-aa15-4ed5-b803-bb45f306e91f" /># SQL Query AI Agent
+# SQL Query AI Agent
 
 A task-focused AI agent that turns plain-English questions into **validated, read-only SQL**, explains the result,
 and can also **optimise** or **debug** SQL you paste in. It refuses everything that is not about SQL or the

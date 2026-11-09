@@ -31,9 +31,7 @@ Docker, unit and integration tests.
 ```
 
 ### Get a free LLM key (any OpenAI-compatible provider works)
-1. **Groq:** console.groq.com → API Keys → Create. Set `LLM_PROVIDER=groq`.
-2. **Google Gemini:** aistudio.google.com → Get API key. Set `LLM_PROVIDER=gemini`.
-3. **OpenRouter:** openrouter.ai → Keys. Set `LLM_PROVIDER=openrouter` and choose a `:free` model in `LLM_MODEL`.
+1. **Groq:** console.groq.com → API Keys → Create. Set `LLM_PROVIDER=groq`
 
 Free-tier limits and model names change often. If you get a "model not found" or rate-limit error, set `LLM_MODEL`
 to a model your provider currently lists. Each question uses about 3–4 LLM calls.

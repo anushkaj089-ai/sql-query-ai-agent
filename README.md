@@ -5,7 +5,7 @@ and can also **optimise** or **debug** SQL you paste in. It refuses everything t
 provided database. Built with **LangGraph + FastAPI + SQLite + sqlglot**.
 
 - **Live app:** https://sql-query-ai-agent-agae.onrender.com/
-- **Demo video:** `<ADD YOUR VIDEO LINK HERE>`
+- **Demo video:** https://drive.google.com/file/d/15g0xwWRXJLPaWgb46WA292rr4gkbnXJO/view?usp=sharing
 
 ## What it does
 
